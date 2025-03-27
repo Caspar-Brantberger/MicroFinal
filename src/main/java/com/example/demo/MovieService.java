@@ -35,10 +35,10 @@ public class MovieService {
         movieRepository.deleteById(id);
         em.clear();
     }
-    public Movie updateMovie(Long id,String newTitle,String newGenre){
-        Movie movie = movieRepository.findById(id).get();
-        movie.setTitle(newTitle);
-        movie.setGenre(newGenre);
+    public Movie updateMovie(Long id, Movie newMovie){
+        Movie movie = movieRepository.findById(id).orElseThrow(()->new IllegalArgumentException("Movie not found with id:"));
+        movie.setTitle(newMovie.getTitle());
+        movie.setGenre(newMovie.getGenre());
         return movieRepository.save(movie);
     }
 }

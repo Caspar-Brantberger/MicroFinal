@@ -5,18 +5,22 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/movies")
 public class MovieController {
 
     private final WebClient reviewClient;
+    private final MovieRepository movieRepository;
     MovieService movieService;
 
-    public MovieController(MovieService movieService, WebClient.Builder reviewClient) {
+    public MovieController(MovieService movieService, WebClient.Builder reviewClient, MovieRepository movieRepository) {
         this.reviewClient = reviewClient.baseUrl("http://localhost:8082").build();
         this.movieService = movieService;
+        this.movieRepository = movieRepository;
     }
 
     @GetMapping
@@ -24,19 +28,45 @@ public class MovieController {
         return movieService.getMovie();
     }
 
+
+
     @GetMapping("/{id}")
-    public ResponseEntity<Movie> getAllMovieswithId(@PathVariable Long id){
-        Movie movie = movieService.getMovieById(id);
-       return ResponseEntity.ok(movie);
-   }
+    public List<Review> getMovieReviews(@PathVariable("id") Long movieId) {
+        List<Review> allReviews = reviewClient.get()
+                .uri("/reviews") // fetch all reviews
+                .retrieve()
+                .bodyToFlux(Review.class)
+                .collectList()
+                .block();
+
+
+        if (allReviews == null || allReviews.isEmpty()) {
+            System.out.println("No reviews found.");
+            return Collections.emptyList();
+        }
+
+
+        List<Review> filteredReviews = allReviews.stream()
+                .filter(review -> review.getMovieId().equals(movieId))
+                .collect(Collectors.toList());
+
+        if(filteredReviews.isEmpty()){
+            System.out.println("No reviews for that movie found.");
+            return Collections.emptyList();
+        }
+
+        return filteredReviews;
+    }
+
+
     @PostMapping
     public ResponseEntity<Movie> addMovie(@RequestBody Movie movie){
         Movie newMovie = movieService.addMovie(movie);
         return ResponseEntity.ok(newMovie);
     }
     @PutMapping("/{id}")
-    public ResponseEntity<Movie> updateMovie(@PathVariable Long id,@RequestBody String title, @RequestBody String genre){
-        Movie movie = movieService.updateMovie(id,title,genre);
+    public ResponseEntity<Movie> updateMovie(@PathVariable Long id,@RequestBody Movie movie1){
+        Movie movie = movieService.updateMovie(id,movie1);
         return ResponseEntity.ok(movie);
     }
 
