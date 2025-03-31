@@ -25,6 +25,15 @@ public class MovieController {
 
     @GetMapping
     public List<Movie> getAllMovies(){
+        List<Review>  reviews = reviewClient.get()
+                .uri("/reviews").retrieve().bodyToFlux(Review.class).collectList().block();
+        if(reviews != null){
+            for(Review review: reviews){
+                System.out.println(review);
+            }
+
+        }
+
         return movieService.getMovie();
     }
 
@@ -33,18 +42,16 @@ public class MovieController {
     @GetMapping("/{id}")
     public List<Review> getMovieReviews(@PathVariable("id") Long movieId) {
         List<Review> allReviews = reviewClient.get()
-                .uri("/reviews") // fetch all reviews
+                .uri("/reviews")
                 .retrieve()
                 .bodyToFlux(Review.class)
                 .collectList()
                 .block();
 
-
         if (allReviews == null || allReviews.isEmpty()) {
             System.out.println("No reviews found.");
             return Collections.emptyList();
         }
-
 
         List<Review> filteredReviews = allReviews.stream()
                 .filter(review -> review.getMovieId().equals(movieId))
@@ -57,7 +64,6 @@ public class MovieController {
 
         return filteredReviews;
     }
-
 
     @PostMapping
     public ResponseEntity<Movie> addMovie(@RequestBody Movie movie){
