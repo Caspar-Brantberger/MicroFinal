@@ -13,56 +13,22 @@ import java.util.stream.Collectors;
 @RequestMapping("/movies")
 public class MovieController {
 
-    private final WebClient reviewClient;
     private final MovieRepository movieRepository;
     MovieService movieService;
 
-    public MovieController(MovieService movieService, WebClient.Builder reviewClient, MovieRepository movieRepository) {
-        this.reviewClient = reviewClient.baseUrl("http://localhost:8082").build();
+    public MovieController(MovieService movieService, MovieRepository movieRepository) {
         this.movieService = movieService;
         this.movieRepository = movieRepository;
     }
 
     @GetMapping
     public List<Movie> getAllMovies(){
-        List<Review>  reviews = reviewClient.get()
-                .uri("/reviews").retrieve().bodyToFlux(Review.class).collectList().block();
-        if(reviews != null){
-            for(Review review: reviews){
-                System.out.println(review);
-            }
-
-        }
-
         return movieService.getMovie();
     }
 
-
-
     @GetMapping("/{id}")
     public List<Review> getMovieReviews(@PathVariable("id") Long movieId) {
-        List<Review> allReviews = reviewClient.get()
-                .uri("/reviews")
-                .retrieve()
-                .bodyToFlux(Review.class)
-                .collectList()
-                .block();
-
-        if (allReviews == null || allReviews.isEmpty()) {
-            System.out.println("No reviews found.");
-            return Collections.emptyList();
-        }
-
-        List<Review> filteredReviews = allReviews.stream()
-                .filter(review -> review.getMovieId().equals(movieId))
-                .collect(Collectors.toList());
-
-        if(filteredReviews.isEmpty()){
-            System.out.println("No reviews for that movie found.");
-            return Collections.emptyList();
-        }
-
-        return filteredReviews;
+        return movieService.getMovieReviews(movieId);
     }
 
     @PostMapping
